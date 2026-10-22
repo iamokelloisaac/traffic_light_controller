@@ -194,7 +194,7 @@ larger build.
 ### Build steps
 
 ```bash
-git clone <repo-url> traffic_light_controller
+git clone https://github.com/iamokelloisaac/traffic_light_ controller.git
 cd traffic_light_controller
 
 cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
