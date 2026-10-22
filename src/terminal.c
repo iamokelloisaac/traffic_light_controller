@@ -6,6 +6,14 @@
  * @brief Raw-mode terminal implementation for POSIX and Windows.
  */
 
+//
+// Created by anonymous on 10/22/26.
+//
+/**
+ * @file terminal.c
+ * @brief Raw-mode terminal implementation for POSIX and Windows.
+ */
+
 #ifdef _WIN32
     #include <windows.h>
 #else
@@ -54,16 +62,18 @@ void terminal_enter_raw_mode(void)
     }
 
     /* Disable line buffering (ENABLE_LINE_INPUT) and echo (ENABLE_ECHO_INPUT).
-     * Keep ENABLE_PROCESSED_INPUT so Ctrl+C still raises SIGINT. */
+     * Keep ENABLE_PROCESSED_INPUT so Ctrl+C still raises SIGINT.
+     * We cast to DWORD because ~ (bitwise NOT) promotes the mask to a
+     * signed int (-7), which triggers -Wsign-conversion when assigned to DWORD. */
     DWORD new_mode = original_mode;
-    new_mode &= ~(ENABLE_LINE_INPUT | ENABLE_ECHO_INPUT);
+    new_mode &= (DWORD)~(ENABLE_LINE_INPUT | ENABLE_ECHO_INPUT);
     new_mode |= ENABLE_PROCESSED_INPUT;
 
     if (!SetConsoleMode(h_stdin, new_mode)) {
         return;
     }
 #else
-    /* POSIX implementation (unchanged) */
+    /* POSIX implementation */
     if (tcgetattr(STDIN_FILENO, &original_termios) == -1) {
         return;
     }
