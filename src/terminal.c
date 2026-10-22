@@ -108,4 +108,4 @@ void terminal_restore(void)
     raw_mode_active = 0;
     putchar('\n');
     fflush(stdout);
-}f
+}
