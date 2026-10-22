@@ -57,6 +57,7 @@ add_executable(traffic_light_controller
         include/traffic_light/state_machine.h
         src/state_machine.c
         src/main.c
+        include/traffic_light/traffic_light.h
 )
 
 # Tell the compiler where to find our own header files. This lets us
