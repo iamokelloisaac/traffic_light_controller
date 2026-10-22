@@ -3,49 +3,31 @@
 //
 /**
  * @file input.c
- * @brief Non-blocking keystroke polling using select().
- *
- * Junior developer note: select() is a POSIX function that waits
- * for one of a set of file descriptors to become readable. Using
- * it with a zero timeout lets us "peek" at stdin without blocking.
- *
- * Reading from stdin directly with read() (instead of getchar())
- * avoids stdio's own buffering, which could hide keystrokes from
- * select().
+ * @brief Non-blocking keystroke polling for POSIX and Windows.
  */
 
-#define POSIX_C_SOURCE 200809L
+#ifdef _WIN32
+    #include <conio.h>
+#else
+    #define _POSIX_C_SOURCE 200809L
+    #include <sys/select.h>
+    #include <unistd.h>
+#endif
 
 #include "traffic_light/input.h"
 
-#include <sys/select.h>  /* For fd_set, FD_ZERO, FD_SET, select. */
-#include <unistd.h>      /* For read and STDIN_FILENO. */
-
-/**
- * @brief Checks whether stdin has data ready to read.
- *
- * @return 1 if data is ready, 0 if not, -1 on error.
- */
-static int stdin_ready()
+#ifndef _WIN32
+/* POSIX helpers are only compiled on non-Windows platforms. */
+static int stdin_ready(void)
 {
-    /* fd_set is a bitmask of file descriptors. We only watch stdin. */
     fd_set read_fds;
     FD_ZERO(&read_fds);
     FD_SET(STDIN_FILENO, &read_fds);
-
-    /* A zero timeout tells select to return immediately. */
     struct timeval timeout = {0, 0};
-
-    /* The first argument is "highest descriptor + 1" — a POSIX
-     * convention. Passing NULL for write and exception sets means
-     * we only care about readability. */
-    return select(STDIN_FILENO + 1, &read_fds, nullptr, nullptr, &timeout);
+    return select(STDIN_FILENO + 1, &read_fds, NULL, NULL, &timeout);
 }
 
-/**
- * @brief Reads a single byte from stdin, or -1 if nothing is ready.
- */
-static int read_one_byte()
+static int read_one_byte(void)
 {
     unsigned char byte = 0;
     ssize_t count = read(STDIN_FILENO, &byte, 1);
@@ -54,35 +36,46 @@ static int read_one_byte()
     }
     return (int)byte;
 }
+#endif
 
-void input_clear_buffer()
+void input_clear_buffer(void)
 {
-    /* Drain everything currently readable without blocking. */
+#ifdef _WIN32
+    while (_kbhit()) {
+        (void)_getch();
+    }
+#else
     while (stdin_ready() > 0) {
         if (read_one_byte() < 0) {
             break;
         }
     }
+#endif
 }
 
-InputEvent input_poll()
+InputEvent input_poll(void)
 {
+    int byte = -1;
+
+#ifdef _WIN32
+    if (!_kbhit()) {
+        return INPUT_NONE;
+    }
+    byte = _getch();
+#else
     if (stdin_ready() <= 0) {
         return INPUT_NONE;
     }
-
-    int byte = read_one_byte();
+    byte = read_one_byte();
     if (byte < 0) {
         return INPUT_NONE;
     }
+#endif
 
-    /* Classify: 'q' or 'Q' is STOP, anything else is BUTTON. */
     InputEvent event = (byte == 'q' || byte == 'Q')
                      ? INPUT_STOP
                      : INPUT_BUTTON;
 
-    /* Drain anything else typed at the same time so a single burst
-     * of keystrokes doesn't become many events. */
     input_clear_buffer();
     return event;
 }

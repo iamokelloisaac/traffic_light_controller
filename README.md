@@ -365,7 +365,7 @@ Hidden internals (static functions in `state_machine.c`):
 
 ### `input`
 
-**Files:** `include/traffic_light/input.h`, `src/input.c`
+**Files:** `include/traffic_light/input.h`, `include/traffic_light/input.c`
 
 Non-blocking keystroke polling via `select()` with a zero timeout.
 
@@ -380,7 +380,7 @@ cannot produce multiple events.
 
 ### `terminal`
 
-**Files:** `include/traffic_light/terminal.h`, `src/terminal.c`
+**Files:** `include/traffic_light/terminal.h`, `include/traffic_light/terminal.c`
 
 POSIX `termios` control.
 
@@ -394,7 +394,7 @@ restore the terminal.
 
 ### `timing`
 
-**Files:** `include/traffic_light/timing.h`, `src/timing.c`
+**Files:** `include/traffic_light/timing.h`, `include/traffic_light/timing.c`
 
 | Function / Macro | Purpose |
 |------------------|---------|
@@ -538,7 +538,7 @@ The project targets:
 The current `terminal.c` uses POSIX `termios`, which is not available on
 native Windows. To build natively:
 
-1. Replace `src/terminal.c` with a Win32 version that calls
+1. Replace `include/traffic_light/terminal.c` with a Win32 version that calls
    `GetConsoleMode` / `SetConsoleMode` and stores the original console
    handle for restoration.
 2. Keep `platform.c` as-is; it already enables ANSI and UTF-8.
@@ -596,15 +596,15 @@ different `traffic_light_create()` if desired.
 ### "implicit declaration of function 'nanosleep'"
 
 The compiler cannot see the POSIX prototype. Check that
-`#define _POSIX_C_SOURCE 200809L` appears at the top of `src/timing.c`,
-**before** any `#include`. The same applies to `src/terminal.c` and
-`src/input.c` for `tcgetattr` / `select`.
+`#define _POSIX_C_SOURCE 200809L` appears at the top of `include/traffic_light/timing.c`,
+**before** any `#include`. The same applies to `include/traffic_light/terminal.c` and
+`include/traffic_light/input.c` for `tcgetattr` / `select`.
 
 ### "Cannot resolve symbol 'state_machine_run'"
 
 Either `#include "traffic_light/state_machine.h"` is missing from
 `src/main.c`, or `state_machine.h` was accidentally emptied. Re-check the
-include path in `CMakeLists.txt`:
+include path in `include/traffic_light/CMakeLists.txt`:
 
 ```cmake
 target_include_directories(traffic_light_controller
@@ -646,7 +646,7 @@ stty sane
 ### CMake says "C23 not supported"
 
 Your compiler is too old. Upgrade GCC to 13+ or Clang to 16+, or lower the
-standard in `CMakeLists.txt` (not recommended: the project uses `[[fallthrough]]`
+standard in `include/traffic_light/CMakeLists.txt` (not recommended: the project uses `[[fallthrough]]`
 and other C23 features).
 
 ---
